@@ -161,6 +161,89 @@ contains
     type(traj),intent(in) :: p
     m=p%mass
   end function get_mass
+
+  subroutine get_coordinates_from_time(p, t, x, y, z)
+    type(traj),intent(in) :: p
+    real(8),intent(in) :: t
+    real(8),intent(out) :: x,y,z
+
+    if (p%ntime <= 0) then
+       x = 0.d0
+       y = 0.d0
+       z = 0.d0
+       return
+    elseif (p%ntime == 1) then
+       x = p%x(1)
+       y = p%y(1)
+       z = p%z(1)
+       return
+    endif
+    
+    if    (t <= p%time(1))then
+
+       x = p%x(1)
+       y = p%y(1)
+       z = p%z(1)
+       return
+
+    elseif(t >= p%time(p%ntime))then
+
+       x = p%x(p%ntime)
+       y = p%y(p%ntime)
+       z = p%z(p%ntime)
+       return
+
+    else
+
+       ! block
+       !   integer :: it
+       !   real(8) :: w0, w1
+       !   do it = 2, p%ntime
+       !      if (p%time(it) >= t) then
+       !         w1 = (t - p%time(it-1)) / (p%time(it) - p%time(it-1))
+       !         w0 = 1.d0 - w1
+               
+       !         x = w0*p%x(it-1) + w1*p%x(it)
+       !         y = w0*p%y(it-1) + w1*p%y(it)
+       !         z = w0*p%z(it-1) + w1*p%z(it)
+       !         return
+       !      endif
+       !   enddo
+       ! end block
+
+       block
+         integer :: lo, hi, mid
+         real(8) :: w0, w1, t0, t1
+
+         lo = 1
+         hi = p%ntime
+         
+         do while (hi - lo > 1)
+            mid = (lo + hi) / 2
+            if (p%time(mid) <= t) then
+               lo = mid
+            else
+               hi = mid
+            endif
+            ! write(6,*) lo,hi,p%time(lo),p%time(hi)
+         enddo
+         
+         t0 = p%time(lo)
+         t1 = p%time(hi)
+         w1 = (t - t0) / (t1 - t0)
+         w0 = 1.d0 - w1
+         
+         x = w0*p%x(lo) + w1*p%x(hi)
+         y = w0*p%y(lo) + w1*p%y(hi)
+         z = w0*p%z(lo) + w1*p%z(hi)
+         
+         return
+         
+       end block
+
+    endif
+    
+  end subroutine get_coordinates_from_time
   
 end module module_tdata
 
@@ -194,14 +277,14 @@ contains
     endif
 
     call read_scalar_integer_hdf5(file_id, "/ntraj", ntraj)
-
+    
     if (allocated(particles)) call deallocate_particles()
     allocate(particles(ntraj))
 
     do ip = 1, ntraj
        call read_one_tdata_from_hdf5(file_id, ip, particles(ip))
     enddo
-
+    
     call h5fclose_f(file_id, hdf_err)
     call h5close_f(hdf_err)
   end subroutine read_set_tdata_from_hdf5
@@ -259,10 +342,6 @@ contains
     call read_scalar_real4_to_real8_hdf5(group_id, "ut1_final", p%ut1_final)
     call read_scalar_real4_to_real8_hdf5(group_id, "hut_final", p%hut_final)
 
-    ! 旧名との互換
-    if (p%ut1_final == 0.d0) call try_read_scalar_real4_to_real8_hdf5(group_id, "u_t", p%ut1_final)
-    if (p%hut_final == 0.d0) call try_read_scalar_real4_to_real8_hdf5(group_id, "hut", p%hut_final)
-
     ! required 1D datasets
     call read_1d_real4_to_real8_hdf5(group_id, "time", p%time)
     call read_1d_real4_to_real8_hdf5(group_id, "x",    p%x)
@@ -272,26 +351,19 @@ contains
     call read_1d_real4_to_real8_hdf5(group_id, "temp", p%tem)
     call read_1d_real4_to_real8_hdf5(group_id, "Ye",   p%ye)
     call read_1d_real4_to_real8_hdf5(group_id, "entr", p%sen)
-
-    ! optional 1D datasets
-    call try_read_1d_real4_to_real8_hdf5(group_id, "v^x",     p%vlx)
-    call try_read_1d_real4_to_real8_hdf5(group_id, "v^y",     p%vly)
-    call try_read_1d_real4_to_real8_hdf5(group_id, "v^z",     p%vlz)
-
-    ! call try_read_1d_real4_to_real8_hdf5(group_id, "vlx",     p%vlx)
-    ! call try_read_1d_real4_to_real8_hdf5(group_id, "vly",     p%vly)
-    ! call try_read_1d_real4_to_real8_hdf5(group_id, "vlz",     p%vlz)
-
-    call try_read_1d_real4_to_real8_hdf5(group_id, "rne",     p%rne)
-    call try_read_1d_real4_to_real8_hdf5(group_id, "rae",     p%rae)
-    call try_read_1d_real4_to_real8_hdf5(group_id, "deptn",   p%deptn)
-    call try_read_1d_real4_to_real8_hdf5(group_id, "depta",   p%depta)
-    call try_read_1d_real4_to_real8_hdf5(group_id, "ut",      p%ut)
-    call try_read_1d_real4_to_real8_hdf5(group_id, "hhh",     p%hhh)
-    call try_read_1d_real4_to_real8_hdf5(group_id, "eta_nue", p%eta_nue)
-    call try_read_1d_real4_to_real8_hdf5(group_id, "eta_nub", p%eta_nub)
-    call try_read_1d_real4_to_real8_hdf5(group_id, "b2",      p%b2)
-    call try_read_1d_real4_to_real8_hdf5(group_id, "pres",    p%pres)
+    call read_1d_real4_to_real8_hdf5(group_id, "v^x",     p%vlx)
+    call read_1d_real4_to_real8_hdf5(group_id, "v^y",     p%vly)
+    call read_1d_real4_to_real8_hdf5(group_id, "v^z",     p%vlz)
+    call read_1d_real4_to_real8_hdf5(group_id, "Enue",     p%rne)
+    call read_1d_real4_to_real8_hdf5(group_id, "Enub",     p%rae)
+    call read_1d_real4_to_real8_hdf5(group_id, "tau_nue",   p%deptn)
+    call read_1d_real4_to_real8_hdf5(group_id, "tau_nub",   p%depta)
+    call read_1d_real4_to_real8_hdf5(group_id, "u_t",      p%ut)
+    call read_1d_real4_to_real8_hdf5(group_id, "h",     p%hhh)
+    call read_1d_real4_to_real8_hdf5(group_id, "eta_nue", p%eta_nue)
+    call read_1d_real4_to_real8_hdf5(group_id, "eta_nub", p%eta_nub)
+    call read_1d_real4_to_real8_hdf5(group_id, "b^2",      p%b2)
+    call read_1d_real4_to_real8_hdf5(group_id, "pres",    p%pres)
 
     call h5gclose_f(group_id, hdf_err)
   end subroutine read_one_tdata_from_hdf5

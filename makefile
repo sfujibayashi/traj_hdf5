@@ -3,7 +3,8 @@ SRC_DIR := src/
 OBJ_DIR := obj/
 PARSER_DIR:=../parser/src/
 
-TARGET1=$(EXE_DIR)traj_hdf5.out
+#TARGET1=$(EXE_DIR)traj_hdf5.out
+TARGET1=$(EXE_DIR)read.out
 
 FC := gfortran
 FXX := h5fc
@@ -26,9 +27,11 @@ FFLAGS += -J$(OBJ_DIR)
 MOD_PARSER := input_parser.f90
 SRC_PARSER :=
 
-MOD:= input_parser.f90 module_tdata.f90 module_trajectory.f90 # ejecta_ye_time.f90
+# MOD:= input_parser.f90 module_tdata.f90 module_trajectory.f90 # ejecta_ye_time.f90
+# SRC := main.f90 #index_rank.f90
 
-SRC := main.f90 #index_rank.f90
+MOD:= input_parser.f90 module_tdata.f90
+SRC := read_hdf5.f90
 
 MOD := $(addprefix $(PARSER_DIR), $(MOD_PARSER)) $(addprefix $(SRC_DIR), $(MOD))
 SRC := $(addprefix $(PARSER_DIR), $(SRC_PARSER)) $(addprefix $(SRC_DIR), $(SRC))
