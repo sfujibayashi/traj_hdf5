@@ -283,6 +283,10 @@ contains
 
     do ip = 1, ntraj
        call read_one_tdata_from_hdf5(file_id, ip, particles(ip))
+
+       if( mod(ip,ntraj/10)==0 )then
+          write(6,*) dble(ip)/dble(ntraj)*100d0,"% finished"
+       endif
     enddo
     
     call h5fclose_f(file_id, hdf_err)
