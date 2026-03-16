@@ -34,20 +34,4 @@ program main
   
   call traj_make_hdf5
 
-  stop
-
-  call traj_read_info_hdf
-  ntraj = traj_get_ntraj()
-  write(6,*) ntraj
-  stop
-
-  call traj_read_hdf(1000,p)
-
-  write(6,*) get_ye_5gk(p)
-  write(6,*) get_crossing_time_radius(p,1d8)
-  write(6,*) get_mass(p)
-  ! do it=1,p%ntime
-  !    write(6,'(i6,99es12.4)') it,p%time(it),p%tem(it),p%ye(it), sqrt(p%x(it)**2 + p%y(it)**2 + p%z(it)**2)
-  ! enddo
-
 end program main
