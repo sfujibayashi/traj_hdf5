@@ -45,16 +45,34 @@ contains
     character(256) :: fn
     integer :: ip, it
 
-    fn = trim(dir_traj)//"/ana_traj.dat"
-    open(10,file=fn,iostat=iostat,status="old",action="read")
-    read(10,*);read(10,*)
-    ip = 0
-    do
-       read(10,*,end=99)
-       ip=ip+1
-    enddo
-99  close(10)
-    ntraj = ip
+    block
+      integer,parameter :: ntraj_limit = 1000000
+      integer :: i
+      logical :: exists
+
+      ip=0
+      find_n:do i=1,ntraj_limit
+         write(fn,'(a,"/traj_",i8.8,".dat")') trim(dir_traj), i
+         inquire(file=fn, exist=exists)
+         if(exists)then
+            ip=i
+         else
+            exit find_n
+         endif
+      enddo find_n
+      ntraj=ip
+    end block
+!     fn = trim(dir_traj)//"/ana_traj.dat"
+!     open(10,file=fn,iostat=iostat,status="old",action="read")
+!     read(10,*);read(10,*)
+!     ip = 0
+!     do
+!        read(10,*,end=99)
+!        ip=ip+1
+!     enddo
+! 99  close(10)
+!     ntraj = ip
+
     write(6,*) "ntraj = ",ntraj
 
     ip=1
