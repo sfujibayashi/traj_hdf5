@@ -3,7 +3,7 @@ module module_trajectory
 
   private
 
-  public :: traj_set_dir, traj_read_info, traj_show_info, traj_make_hdf5
+  public :: traj_set_dir, traj_read_info, traj_show_info, traj_make_hdf5, traj_make_binary
 
   ! from trajectries
   integer :: ntraj
@@ -369,5 +369,151 @@ contains
     end subroutine write_1d_real_hdf5
 
   end subroutine traj_make_hdf5
+
+
+  subroutine traj_make_binary
+
+    real(4), allocatable :: time_p(:)
+    real(4), allocatable :: x_p(:), y_p(:), z_p(:)
+    real(4), allocatable :: vlx_p(:), vly_p(:), vlz_p(:)
+    real(4), allocatable :: qrho_p(:), tem_p(:), ye_p(:), sen_p(:)
+    real(4), allocatable :: rne_p(:), rae_p(:)
+    real(4), allocatable :: deptn_p(:), depta_p(:)
+    real(4), allocatable :: ut_p(:), hhh_p(:)
+    real(4), allocatable :: eta_nue_p(:), eta_nub_p(:), b2_p(:), pres_p(:)
+
+    real(4) :: mass_p
+    real(4) :: ut1_final_p, hut_final_p
+
+    integer :: my_thr, max_thr
+    integer :: ip, it, ntime_p
+    integer :: nunit, iostat, nunit_bin
+
+    character(256) :: fn, fn_binary, str1
+    
+    allocate(time_p(ntime), x_p(ntime), y_p(ntime), z_p(ntime), &
+         vlx_p(ntime), vly_p(ntime), vlz_p(ntime), &
+         qrho_p(ntime), tem_p(ntime), ye_p(ntime), sen_p(ntime), &
+         rne_p(ntime), rae_p(ntime), &
+         deptn_p(ntime), depta_p(ntime), &
+         ut_p(ntime), hhh_p(ntime), &
+            eta_nue_p(ntime), eta_nub_p(ntime), b2_p(ntime), pres_p(ntime))
+
+    fn_binary = trim(dir_traj) // "/all_traj.bin"
+
+    open(newunit=nunit_bin,file=trim(adjustl(fn_binary)) ,status="replace", action="write", form="unformatted", access="stream", convert="big_endian")
+    write(nunit_bin) ntraj
+
+    my_thr  = 0
+    max_thr = 1
+    do ip = 1, ntraj
+       
+       mass_p      = 0.0
+       ut1_final_p = 0.0
+       hut_final_p = 0.0
+       ntime_p     = 0
+
+       time_p    = 0.0
+       x_p       = 0.0
+       y_p       = 0.0
+       z_p       = 0.0
+       vlx_p     = 0.0
+       vly_p     = 0.0
+       vlz_p     = 0.0
+       qrho_p    = 0.0
+       tem_p     = 0.0
+       ye_p      = 0.0
+       sen_p     = 0.0
+       rne_p     = 0.0
+       rae_p     = 0.0
+       deptn_p   = 0.0
+       depta_p   = 0.0
+       ut_p      = 0.0
+       hhh_p     = 0.0
+       eta_nue_p = 0.0
+       eta_nub_p = 0.0
+       b2_p      = 0.0
+       pres_p    = 0.0
+
+       write(fn,'(a,"/traj_",i8.8,".dat")') trim(dir_traj), ip
+       open(newunit=nunit, file=fn, iostat=iostat, status="old", action="read")
+       if (iostat /= 0) then
+          write(6,*) "ERROR: failed to open ", trim(fn), " iostat=", iostat
+          cycle
+       endif
+
+       read(nunit,*)
+       read(nunit,*)
+       read(nunit,'(16x,es13.5,20x,2es13.5)') mass_p, ut1_final_p, hut_final_p
+       read(nunit,*)
+
+       do it = 1, ntime
+          read(nunit,*,end=99) &
+               time_p(it),    &
+               x_p(it),       &
+               y_p(it),       &
+               z_p(it),       &
+               vlx_p(it),     &
+               vly_p(it),     &
+               vlz_p(it),     &
+               qrho_p(it),    &
+               tem_p(it),     &
+               ye_p(it),      &
+               sen_p(it),     &
+               rne_p(it),     &
+               rae_p(it),     &
+               deptn_p(it),   &
+               depta_p(it),   &
+               ut_p(it),      &
+               hhh_p(it),     &
+               eta_nue_p(it), &
+               eta_nub_p(it), &
+               b2_p(it),      &
+               pres_p(it)
+          ntime_p = it
+       enddo
+
+99     close(nunit)
+
+       if (ntime_p <= 0) then
+          write(6,*) "WARNING: no trajectory data for ip=", ip
+          stop
+       endif
+       
+       write(nunit_bin) ntime_p
+       write(nunit_bin) mass_p, ut1_final_p, hut_final_p
+       write(nunit_bin) time_p(1:ntime_p),    &
+               x_p(1:ntime_p),       &
+               y_p(1:ntime_p),       &
+               z_p(1:ntime_p),       &
+               vlx_p(1:ntime_p),     &
+               vly_p(1:ntime_p),     &
+               vlz_p(1:ntime_p),     &
+               qrho_p(1:ntime_p),    &
+               tem_p(1:ntime_p),     &
+               ye_p(1:ntime_p),      &
+               sen_p(1:ntime_p),     &
+               rne_p(1:ntime_p),     &
+               rae_p(1:ntime_p),     &
+               deptn_p(1:ntime_p),   &
+               depta_p(1:ntime_p),   &
+               ut_p(1:ntime_p),      &
+               hhh_p(1:ntime_p),     &
+               eta_nue_p(1:ntime_p), &
+               eta_nub_p(1:ntime_p), &
+               b2_p(1:ntime_p),      &
+               pres_p(1:ntime_p)
+
+       if (my_thr == 0) write(6,*) ip, ntraj
+
+    enddo
+    close(nunit_bin)
+
+    deallocate(time_p, x_p, y_p, z_p, &
+         vlx_p, vly_p, vlz_p, &
+         qrho_p, tem_p, ye_p, sen_p, &
+         rne_p, rae_p, deptn_p, depta_p, &
+         ut_p, hhh_p, eta_nue_p, eta_nub_p, b2_p, pres_p)
+  end subroutine traj_make_binary
 
 end module module_trajectory

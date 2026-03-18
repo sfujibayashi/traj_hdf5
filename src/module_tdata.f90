@@ -284,7 +284,7 @@ contains
     do ip = 1, ntraj
        call read_one_tdata_from_hdf5(file_id, ip, particles(ip))
 
-       if( mod(ip,ntraj/10)==0 )then
+       if( mod(ip,ntraj/1000)==0 )then
           write(6,*) dble(ip)/dble(ntraj)*100d0,"% finished"
        endif
     enddo
@@ -602,5 +602,109 @@ contains
     p%b2      = particles(ip)%b2
     p%pres    = particles(ip)%pres
   end subroutine copy_particle
+
+  subroutine read_one_traj_binary(nunit, p, ios)
+    implicit none
+
+    integer, intent(in) :: nunit
+    type(traj), intent(inout) :: p
+    integer, intent(out) :: ios
+
+    integer :: ntime_p
+
+    ios = 0
+
+    read(nunit, iostat=ios) ntime_p
+    if (ios /= 0) return
+
+    p%ntime = ntime_p
+
+    read(nunit, iostat=ios) p%mass, p%ut1_final, p%hut_final
+    if (ios /= 0) return
+
+    if (allocated(p%time))    deallocate(p%time)
+    if (allocated(p%x))       deallocate(p%x, p%y, p%z)
+    if (allocated(p%vlx))     deallocate(p%vlx, p%vly, p%vlz)
+    if (allocated(p%qrho))    deallocate(p%qrho, p%tem, p%ye, p%sen)
+    if (allocated(p%rne))     deallocate(p%rne, p%rae)
+    if (allocated(p%deptn))   deallocate(p%deptn, p%depta)
+    if (allocated(p%ut))      deallocate(p%ut, p%hhh)
+    if (allocated(p%eta_nue)) deallocate(p%eta_nue, p%eta_nub, p%b2, p%pres)
+
+    allocate( p%time(ntime_p), p%x(ntime_p), p%y(ntime_p), p%z(ntime_p), &
+         p%vlx(ntime_p), p%vly(ntime_p), p%vlz(ntime_p), &
+         p%qrho(ntime_p), p%tem(ntime_p), p%ye(ntime_p), p%sen(ntime_p), &
+         p%rne(ntime_p), p%rae(ntime_p), &
+         p%deptn(ntime_p), p%depta(ntime_p), &
+         p%ut(ntime_p), p%hhh(ntime_p), &
+         p%eta_nue(ntime_p), p%eta_nub(ntime_p), p%b2(ntime_p), p%pres(ntime_p) )
+
+    read(nunit, iostat=ios) p%time,    &
+         p%x,       &
+         p%y,       &
+         p%z,       &
+         p%vlx,     &
+         p%vly,     &
+         p%vlz,     &
+         p%qrho,    &
+         p%tem,     &
+         p%ye,      &
+         p%sen,     &
+         p%rne,     &
+         p%rae,     &
+         p%deptn,   &
+         p%depta,   &
+         p%ut,      &
+         p%hhh,     &
+         p%eta_nue, &
+         p%eta_nub, &
+         p%b2,      &
+         p%pres
+  end subroutine read_one_traj_binary
+  
+  subroutine read_all_traj_binary(fn_binary)
+    implicit none
+
+    character(*), intent(in) :: fn_binary
+    ! type(traj), allocatable, intent(out) :: trajs(:)
+    ! integer, intent(out) :: ntraj
+    
+    integer :: ios
+    
+    integer :: nunit_bin, ip
+
+    ios = 0
+    ntraj = 0
+
+    open(newunit=nunit_bin, file=trim(adjustl(fn_binary)), &
+         status="old", action="read", form="unformatted", &
+         access="stream", convert="big_endian", iostat=ios)
+    if (ios /= 0) return
+
+    read(nunit_bin, iostat=ios) ntraj
+    if (ios /= 0) then
+       close(nunit_bin)
+       return
+    endif
+
+    if (ntraj <= 0) then
+       ios = -1
+       close(nunit_bin)
+       return
+    endif
+
+    allocate(trajs(ntraj))
+
+    do ip = 1, ntraj
+       call read_one_traj_binary(nunit_bin, trajs(ip), ios)
+       if (ios /= 0) then
+          write(6,*) "ERROR: failed while reading trajectory ip=", ip, " ios=", ios
+          close(nunit_bin)
+          return
+       endif
+    enddo
+
+    close(nunit_bin)
+  end subroutine read_all_traj_binary
 
 end module module_set_tdata

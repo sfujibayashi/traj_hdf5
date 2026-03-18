@@ -3,23 +3,23 @@ SRC_DIR := src/
 OBJ_DIR := obj/
 PARSER_DIR:=../parser/src/
 
-#TARGET1=$(EXE_DIR)traj_hdf5.out
-TARGET1=$(EXE_DIR)read.out
+# TARGET1=$(EXE_DIR)traj_hdf5.out
+TARGET1=$(EXE_DIR)traj_binary.out
+# TARGET1=$(EXE_DIR)read.out
 
-FC := gfortran
+# FC := gfortran
 FXX := h5fc
-FFLAGS := -ffree-line-length-none -fopenmp # gfortran
+#FFLAGS := -ffree-line-length-none -fopenmp # gfortran
 #FFLAGS = -O3 -convert big_endian #-ffpe-trap=invalid,zero,overflow -fbacktrace
 #FFLAGS = -O3 -convert big_endian #-ffpe-trap=invalid,zero,overflow -fbacktrace
 #FFLAGS = -h byteswapio,list=a -eZ -hpic -dynamic
-FFLAGS += -J$(OBJ_DIR) 
-
-#FFLAGS := -mcmodel=large -shared-intel -xHost -qopenmp
-#FFLAGS += $(FFLAGS) #-O0 -CB -traceback -g -fpe0
-
 #FFLAGS0= -fconvert=big-endian -ffree-line-length-none -fopenmp
 #FFLAGS = $(FFLAGS0) -Wall -fbounds-check -O -Wuninitialized -ffpe-trap=invalid,zero,overflow,underflow,denormal -fbacktrace -g
-# FFLAGS += -module $(OBJ_DIR) 
+#FFLAGS += -J$(OBJ_DIR) 
+
+FFLAGS := -mcmodel=large -shared-intel -xHost -qopenmp
+#FFLAGS += $(FFLAGS) #-O0 -CB -traceback -g -fpe0
+FFLAGS += -module $(OBJ_DIR) 
 
 .SUFFIXES: .f90 .F90 .o .mod
 %.o: %.mod
@@ -27,11 +27,12 @@ FFLAGS += -J$(OBJ_DIR)
 MOD_PARSER := input_parser.f90
 SRC_PARSER :=
 
-# MOD:= input_parser.f90 module_tdata.f90 module_trajectory.f90 # ejecta_ye_time.f90
-# SRC := main.f90 #index_rank.f90
+MOD:= input_parser.f90 module_tdata.f90 module_trajectory.f90 # ejecta_ye_time.f90
+# SRC := make_hdf5.f90 #index_rank.f90
+SRC := make_binary.f90
 
-MOD:= input_parser.f90 module_tdata.f90
-SRC := read_hdf5.f90
+#MOD:= input_parser.f90 module_tdata.f90
+#SRC := read_hdf5.f90
 
 MOD := $(addprefix $(PARSER_DIR), $(MOD_PARSER)) $(addprefix $(SRC_DIR), $(MOD))
 SRC := $(addprefix $(PARSER_DIR), $(SRC_PARSER)) $(addprefix $(SRC_DIR), $(SRC))
